@@ -85,7 +85,7 @@ if [[ -n "$DNSSERVER" ]]; then
         sed -e "s+.:53+$DOMAIN {\\\\n  forward . $DNSSERVER\\\\n}\\\\n.:53+g" | \
         kubectl apply -f -
 fi
-docker exec k3d-gitpod-master-0 mount --make-shared /sys/fs/cgroup
+docker exec k3d-gitpod-server-0 mount --make-shared /sys/fs/cgroup
 
 cd "$GPSH_DIR"
 helm repo add charts.gitpod.io https://charts.gitpod.io
@@ -118,7 +118,7 @@ kubectl delete networkpolicies.networking.k8s.io --all
 
 # Add GitLab OAuth config
 echo "Adding GitLab OAuth config ..."
-k3d kubeconfig get gitlab --switch-context
+k3d kubeconfig get gitlab | tee $HOME/.kube/config
 
 # Wait for GitLab DB
 echo "Waiting for GitLab DB ..."
