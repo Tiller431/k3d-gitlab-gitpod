@@ -56,7 +56,8 @@ if [[ -n "$2" ]]; then
 fi
 
 kubectl create secret tls tls-certs \
-    --from-file=$CERTS
+    --cert="$CERTS/fullchain.pem" \
+    --key="$CERTS/privkey.pem"
 
 helm repo add gitlab https://charts.gitlab.io/
 helm install gitlab gitlab/gitlab \
