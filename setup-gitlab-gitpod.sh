@@ -15,7 +15,6 @@ if [[ $# -lt 1 ]] || [[ "$1" == "help" ]] || [[ "$1" == "--help" ]] || [[ "$1" =
 fi
 
 DOMAIN="$1"
-DNSSERVER="$2"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR=$SCRIPT_DIR
 GPSH_DIR=$ROOT_DIR/gitpod-self-hosted
@@ -47,10 +46,9 @@ echo "Installing GitLab cluster ..."
 k3d cluster create \
     -p 1443:443@loadbalancer \
     --k3s-server-arg --disable=traefik \
-    --switch-context \
     gitlab
 
-if [[ -n "$DNSSERVER" ]]; then
+if [[ -n "$2" ]]; then
     # let your domain resolve by the given DNS server
     kubectl get configmap -n kube-system coredns -o json | \
         sed -e "s+.:53+$DOMAIN {\\\\n  forward . $DNSSERVER\\\\n}\\\\n.:53+g" | \
@@ -74,12 +72,10 @@ echo "Installing Gitpod cluster ..."
 mkdir -p /tmp/workspaces
 k3d cluster create \
     -p 2443:443@loadbalancer \
-    -v /tmp/workspaces:/var/gitpod/workspaces:shared \
     --k3s-server-arg --disable=traefik \
-    --switch-context \
     gitpod
 
-if [[ -n "$DNSSERVER" ]]; then
+if [[ -n "$2" ]]; then
     # let your domain resolve by the given DNS server
     kubectl get configmap -n kube-system coredns -o json | \
         sed -e "s+.:53+$DOMAIN {\\\\n  forward . $DNSSERVER\\\\n}\\\\n.:53+g" | \
@@ -118,11 +114,11 @@ kubectl delete networkpolicies.networking.k8s.io --all
 
 # Add GitLab OAuth config
 echo "Adding GitLab OAuth config ..."
-k3d kubeconfig get gitlab | tee $HOME/.kube/config
+k3d kubeconfig merge gitlab
 
 # Wait for GitLab DB
 echo "Waiting for GitLab DB ..."
-while [[ -z $(kubectl get pods | grep gitlab-migrations | grep Completed) ]]; do printf .; sleep 10; done
+while [[ -z $(kubectl get pods | grep gitlab-migrations | grep Completed) ]]; do printf .; sleep 1; done
 echo ""
 DBPASSWD=$(kubectl get secret gitlab-postgresql-password -o jsonpath='{.data.postgresql-postgres-password}' | base64 --decode)
 SQL=$(sed "s+example.com+$DOMAIN+" "$GITLAB_DIR/insert_oauth_application.sql")
