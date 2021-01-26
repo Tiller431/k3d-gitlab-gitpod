@@ -30,8 +30,8 @@ if [[ ! -f "$CERTS/fullchain.pem" ]] || [[ ! -f "$CERTS/privkey.pem" ]]; then
 fi
 
 echo "Using domain:     $DOMAIN"
-if [[ -n "$DNSSERVER" ]]; then
-    echo "Using DNS server: $DNSSERVER"
+if [[ -n "$2" ]]; then
+    echo "Using DNS server: $2"
 fi
 
 echo "Removing existing installation if exists ..."
@@ -51,13 +51,13 @@ k3d cluster create \
 if [[ -n "$2" ]]; then
     # let your domain resolve by the given DNS server
     kubectl get configmap -n kube-system coredns -o json | \
-        sed -e "s+.:53+$DOMAIN {\\\\n  forward . $DNSSERVER\\\\n}\\\\n.:53+g" | \
+        sed -e "s+.:53+$DOMAIN {\\\\n  forward . $2\\\\n}\\\\n.:53+g" | \
         kubectl apply -f -
 fi
 
 kubectl create secret tls tls-certs \
-    --cert="$CERTS/fullchain.pem" \
-    --key="$CERTS/privkey.pem"
+    --from-file=$CERTS
+
 helm repo add gitlab https://charts.gitlab.io/
 helm install gitlab gitlab/gitlab \
     --set global.hosts.domain=$DOMAIN \
@@ -78,7 +78,7 @@ k3d cluster create \
 if [[ -n "$2" ]]; then
     # let your domain resolve by the given DNS server
     kubectl get configmap -n kube-system coredns -o json | \
-        sed -e "s+.:53+$DOMAIN {\\\\n  forward . $DNSSERVER\\\\n}\\\\n.:53+g" | \
+        sed -e "s+.:53+$DOMAIN {\\\\n  forward . $2\\\\n}\\\\n.:53+g" | \
         kubectl apply -f -
 fi
 docker exec k3d-gitpod-server-0 mount --make-shared /sys/fs/cgroup
@@ -114,7 +114,7 @@ kubectl delete networkpolicies.networking.k8s.io --all
 
 # Add GitLab OAuth config
 echo "Adding GitLab OAuth config ..."
-k3d kubeconfig merge gitlab
+k3d kubeconfig get gitlab | tee $HOME/.kube/config
 
 # Wait for GitLab DB
 echo "Waiting for GitLab DB ..."
