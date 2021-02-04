@@ -88,7 +88,19 @@ cd "$GPSH_DIR"
 helm repo add charts.gitpod.io https://charts.gitpod.io
 helm dep update
 
-
+# Newest helm leads to this error:
+# Error: template: gitpod-selfhosted/charts/gitpod/charts/minio/templates/deployment.yaml:192:20: executing "gitpod-selfhosted/charts/gitpod/charts/minio/templates/deployment.yaml" at <(not .Values.gcsgateway.enabled) (not .Values.azuregateway.enabled) (not .Values.s3gateway.enabled) (not .Values.b2gateway.enabled)>: can't give argument to non-function not .Values.gcsgateway.enabled
+# this patch helps:
+(
+cd "$GPSH_DIR/charts"
+tar -xzf gitpod-0.4.0.tgz
+cd gitpod
+patch -p1 < "$GPSH_DIR/minio-deployment.patch"
+cd ..
+rm gitpod-0.4.0.tgz
+tar -czf gitpod-0.4.0.tgz gitpod/
+rm -r gitpod
+)
 
 helm upgrade --install -f values.yaml gitpod . \
     --timeout 60m \
@@ -96,8 +108,7 @@ helm upgrade --install -f values.yaml gitpod . \
     --set gitpod.authProviders[0].host=gitlab.$DOMAIN \
     --set gitpod.authProviders[0].oauth.callBackUrl=https://gitpod.$DOMAIN/auth/gitlab/callback \
     --set gitpod.authProviders[0].oauth.settingsUrl=gitlab.$DOMAIN/profile/applications \
-    --set gitpod.components.wsManagerNode.containerdSocket=/run/k3s/containerd/containerd.sock \
-    --version=0.7.0
+    --set gitpod.components.wsManagerNode.containerdSocket=/run/k3s/containerd/containerd.sock
 cd -
 # We remove all network policies since there are issues for our setting that need to be fixed in the long term.
 kubectl delete networkpolicies.networking.k8s.io --all
