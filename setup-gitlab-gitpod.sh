@@ -108,7 +108,8 @@ helm upgrade --install -f values.yaml gitpod . \
     --set gitpod.authProviders[0].host=gitlab.$DOMAIN \
     --set gitpod.authProviders[0].oauth.callBackUrl=https://gitpod.$DOMAIN/auth/gitlab/callback \
     --set gitpod.authProviders[0].oauth.settingsUrl=gitlab.$DOMAIN/profile/applications \
-    --set gitpod.components.wsManagerNode.containerdSocket=/run/k3s/containerd/containerd.sock
+    --set gitpod.components.wsManagerNode.containerdSocket=/run/k3s/containerd/containerd.sock \
+    --version=0.7.0
 cd -
 # We remove all network policies since there are issues for our setting that need to be fixed in the long term.
 kubectl delete networkpolicies.networking.k8s.io --all

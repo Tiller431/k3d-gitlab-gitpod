@@ -1,4 +1,5 @@
 gitpod:
+  version: "0.7.0-beta1"
   hostname: gitpod.example.com
 
   certificatesSecret:
